@@ -37,18 +37,28 @@ export const createAppointment = async (req, res) => {
   }
 };
 
-// Get all appointments with patient & specialist names
+// Get all appointments with for admins
 export const getAppointments = async (req, res) => {
   try {
     const appointments = await Appointment.find()
-      .populate("patient", "name email")     // only return name & email
-      .populate("specialist", "name email"); // only return name & email
+      .populate({
+        path: "patient",
+        select: "name role",
+        match: { role: "patient" }
+      })
+      .populate({
+        path: "specialist",
+        select: "name role",
+        match: { role: "specialist" }
+      });
 
     res.status(200).json(appointments);
   } catch (error) {
-    res.status(500).json({ message: "Error fetching appointments", error });
+    console.log(error)
+    res.status(500).json({ message: "Error fetching appointments", error: error });
   }
 };
+
 
 // Get single appointment by ID
 export const getAppointmentById = async (req, res) => {
