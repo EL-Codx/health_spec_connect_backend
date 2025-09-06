@@ -35,7 +35,7 @@ router.post("/add", async (req, res) => {
 });
 
 
-// Get all users
+// Get all users: admins and support 
 router.get("/", async (req, res) => {
   try {
     const users = await User.find({ role: { $in: ["admin", "support"] } });
@@ -61,6 +61,17 @@ router.get("/specialists", async (req, res) => {
 router.get("/patients", async (req, res) => {
   try {
     const users = await User.find({ role: "patient" });
+    res.json(users);
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching users" });
+  }
+});
+
+
+// Get all user
+router.get("/all", async (req, res) => {
+  try {
+    const users = await User.find();
     res.json(users);
   } catch (error) {
     res.status(500).json({ message: "Error fetching users" });

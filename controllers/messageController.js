@@ -1,65 +1,76 @@
-// controllers/messageController.js
+import Appointment from "../models/Appointment.js";
 import Message from "../models/Message.js";
-import User from "../models/User.js";
 
-/**
- * Send message
- * POST /api/messages
- * body: { receiverId, content }
- */
+// Get chat partners based on logged in user type
+export const getChatPartners = async (req, res) => {
+  try {
+    const { userId, role } = req.query; // role = 'patient' or 'specialist'
+
+    let partners = [];
+    if (role === "patient") {
+      // all specialists this patient booked
+      const appointments = await Appointment.find({ patient: userId }).populate("specialist", "name email");
+      partners = appointments.map(a => a.specialist);
+    } else if (role === "specialist") {
+      // all patients who booked this specialist
+      const appointments = await Appointment.find({ specialist: userId }).populate("patient", "name email");
+      partners = appointments.map(a => a.patient);
+    }
+
+    // remove duplicates
+    const uniquePartners = partners.filter((p, i, self) => p && self.findIndex(x => x._id.equals(p._id)) === i);
+
+    res.json(uniquePartners);
+  } catch (err) {
+    res.status(500).json({ message: "Error fetching chat partners", error: err });
+  }
+};
+
+// Get old messages
+export const getMessages = async (req, res) => {
+  try {
+    const { chatRoom } = req.params;
+    const messages = await Message.find({ chatRoom }).populate("sender", "name").sort({ createdAt: 1 });
+    res.json(messages);
+  } catch (err) {
+    res.status(500).json({ message: "Error fetching messages", error: err });
+  }
+};
+
+// Send message
 export const sendMessage = async (req, res) => {
   try {
-    const { receiverId, content } = req.body;
-    if (!receiverId || !content) return res.status(400).json({ message: "receiverId and content required" });
+    const { sender, receiver, text } = req.body;
+    const chatRoom = [sender, receiver].sort().join("-"); // consistent order
 
-    const receiver = await User.findById(receiverId);
-    if (!receiver) return res.status(404).json({ message: "Receiver not found" });
+    const message = new Message({ sender, receiver, chatRoom, text });
+    await message.save();
 
-    const msg = await Message.create({
-      sender: req.user._id,
-      receiver: receiverId,
-      content,
-    });
-
-    res.status(201).json(msg);
+    res.status(201).json(message);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: "Error sending message", error: err });
   }
 };
 
-/**
- * Get conversation between current user and another user
- * GET /api/messages/conversation/:userId
- */
-export const getConversation = async (req, res) => {
-  try {
-    const otherId = req.params.userId;
-    const msgs = await Message.find({
-      $or: [
-        { sender: req.user._id, receiver: otherId },
-        { sender: otherId, receiver: req.user._id },
-      ],
-    })
-      .sort({ createdAt: 1 })
-      .populate("sender", "name role")
-      .populate("receiver", "name role");
 
-    res.json(msgs);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-};
+// Fetch all specialists the logged-in patient has booked
+export const getBookedSpecialists = async (req, res) => {
 
-/**
- * Mark messages as read (messages sent to current user from other user)
- * PATCH /api/messages/read/:userId
- */
-export const markAsRead = async (req, res) => {
   try {
-    const otherId = req.params.userId;
-    await Message.updateMany({ sender: otherId, receiver: req.user._id, read: false }, { read: true });
-    res.json({ message: "Marked as read" });
+    const userId = req.query.userId; // patient userId
+    console.log(req.query)
+
+    // Find all appointments for this patient
+    const appointments = await Appointment.find({ patient: userId }).populate("specialist", "name email specialization");
+    console.log(appointments)
+
+    // Extract unique specialists
+    const specialists = appointments
+      .map(app => app.specialist)
+      .filter((spec, i, arr) => spec && arr.findIndex(x => x._id.equals(spec._id)) === i);
+
+    res.json(specialists);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: "Error fetching booked specialists", error: err.message });
   }
 };

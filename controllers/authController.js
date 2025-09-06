@@ -9,6 +9,7 @@ const generateToken = (id) => {
 
 // Register
 export const registerUser = async (req, res) => {
+  // console.log(req.body)
   const { name, email, password, role } = req.body;
 
   try {
@@ -25,18 +26,39 @@ export const registerUser = async (req, res) => {
       role,
     };
 
-    if (role === "specialist" && req.file) {
-      userData.image = req.file.path;
+    if (role === "specialist") {
+      userData.licenseNumber = req.body.licenseNumber;
+      userData.specialization = req.body.specialization;
+      userData.experienceYears = req.body.experienceYears;
+      
+      if (req.file) {
+        userData.image = req.file.path;
+      }
+
+      // console.log(`Specialist: ${userData}`)
+    }
+
+    if (role === "patient"){
+      userData.age = req.body.age;
+      userData.gender = req.body.gender;
+      userData.contact = req.body.contact;
     }
 
     const user = await User.create(userData);
+    // console.log(`Registered: ${user}`)
 
     res.status(201).json({
       success: true,
       _id: user.id,
       name: user.name,
       email: user.email,
+      age: user.age,
+      gender: user.gender,
+      contact: user.contact,
       role: user.role,
+      licenseNumber: user.licenseNumber,
+      specialization: user.specialization,
+      experienceYears: user.experienceYears,
       image: user.image,
       token: generateToken(user.id),
     });
@@ -61,7 +83,13 @@ export const loginUser = async (req, res) => {
       _id: user.id,
       name: user.name,
       email: user.email,
+      age: user.age,
+      gender: user.gender,
+      contact: user.contact,
       role: user.role,
+      licenseNumber: user.licenseNumber,
+      specialization: user.specialization,
+      experienceYears: user.experienceYears,
       image: user.image,
       token: generateToken(user.id),
     });

@@ -24,6 +24,7 @@ app.use("/api/records", recordRoutes);
 app.use("/api/messages", messageRoutes);
 app.use("/api/users", userRoutes);
 app.use('/uploads', express.static('./uploads'));
+app.use("/api/messages", messageRoutes);
 
 
 app.get("/", (req, res) => res.send("API running..."));

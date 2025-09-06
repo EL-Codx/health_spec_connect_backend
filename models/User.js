@@ -14,13 +14,14 @@ const userSchema = new mongoose.Schema({
   // Specialist fields
   licenseNumber: { type: String },
   specialization: { type: String },
+  experienceYears: {type: Number},
   image: { type: String },
   approved: { type: Boolean, default: false }, // Admin approves specialists
 
   // For patients only
-  age: Number,
-  gender: String,
-  contact: String,
+  age: {type: Number},
+  gender: {type: String},
+  contact: {type: String},
 }, { timestamps: true });
 
 export default mongoose.model("User", userSchema);
